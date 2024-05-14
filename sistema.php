@@ -27,46 +27,139 @@
                         <a class="nav-link active" aria-current="page" href="index.html">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="sistema.html" target="_blank">Gestão Estoque</a>
+                        <a class="nav-link" href="form.php">Doar Medicamentos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sistema.php">Gestão Estoque</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.php" >DashBoard</a>
                     </li>
 
                 </ul>
+                <form >
+                    <button id="open-button" onclick="openNewWindow()">Movimentar Estoque</button>
+                </form>
             </div>
         </div>
     </nav>
     <!-- Navbar fim -->
     <br>
     <style>
+        .search-container {
+        margin-left: 135px; /* Centraliza o conteúdo horizontalmente */
+        margin-bottom: 20px; /* Adiciona uma margem inferior para separar o campo de busca da tabela */
+    }
         table {
-            width: 100%;
-            border-collapse: collapse;
+        margin: 0 auto;
+        width: 80%; /* Set the table width to 100% of its container */
+        border-collapse: collapse; /* Collapse table borders */
+    }
+    th, td {
+        border: 1px solid #ddd; /* Add borders to table cells */
+        padding: 8px; /* Add padding to table cells */
+        text-align: center; /* Align text to the left */
+    }
+    th {
+        background-color: #f2f2f2; /* Add background color to table header cells */
+    }
+    h2 {
+            text-align: center; /* Centraliza o texto */
         }
-        table, th, td {
-            border: 1px solid black;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        
     </style>
 
-    <h2>Visualização do Banco de Dados</h2>
-    <table>
+    <h2>Visualização de Medicamentos em Estoque</h2>
+
+<script>
+    function openNewWindow() {
+        // Abrir a nova janela
+        var newWindow = window.open('', '_blank', 'width=450,height=260');
+        // Criar o conteúdo HTML do formulário
+        var formContent = `
+            <h2>Registro de Movimentação de Estoque</h2>
+            <form action="processa_formulario.php" method="post">
+                <label for="nome_medicamento">Nome do Medicamento:</label>
+                <input type="text" id="nome_medicamento" name="nome_medicamento" required>
+                <br>
+                <label for="dosagem">Dosagem:</label>
+                <input type="text" id="dosagem" name="dosagem" required>
+                <br>
+                <label for="empresa">Empresa:</label>
+                <input type="text" id="empresa" name="empresa" required>
+                <br>
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" name="quantidade" min="0" required>
+                <label for="UM">UM:</label>
+                <select id="UM" name="UM">
+                    <option value="caixa">Caixa</option>
+                    <option value="comprimido">Comprimido</option>
+                    <option value="cartela">Cartela</option>
+                </select>
+                <br>
+                <label for="recebedor">Recebedor:</label>
+                <input type="text" id="recebedor" name="recebedor" required>
+                <br>
+                <label for="data">Data:</label>
+                <input type="date" id="data" name="data" required>
+                <br>
+                <label for="posicao_estoque">Posição de Estoque:</label>
+                <select id="posicao_estoque" name="posicao_estoque">
+                    <option value="Prateleira A">Prateleira A</option>
+                    <option value="Prateleira B">Prateleira B</option>
+                    <option value="Prateleira C">Prateleira C</option>
+                </select>
+                <br>
+                <br>
+                <input type="submit" value="Saída de Estoque" name="submit">
+
+                <input type="submit" value="Entrada de Estoque" name="submit">
+            </form>
+            
+        `;
+        // Escrever o conteúdo do formulário na nova janela
+        newWindow.document.write(formContent);
+
+        newWindow.document.querySelector('form').addEventListener('submit', function() {
+            newWindow.close();
+        });
+    }
+    
+</script>
+
+    <br>
+    
+    <div class="search-container"> <!-- Div para centralizar o campo de busca -->
+    <input type="text" onkeyup="filterTable()" placeholder="ID" size="1">
+    <input type="text" onkeyup="filterTable()" placeholder="Nome Medicamento" size="18">
+    <input type="text" onkeyup="filterTable()" placeholder="Dosagem" size="6">
+    <input type="text" onkeyup="filterTable()" placeholder="Qtd" size="9">
+    <input type="text" onkeyup="filterTable()" placeholder="UM" size="8">
+    <input type="text" onkeyup="filterTable()" placeholder="Empresa" size="11">
+    <input type="text" onkeyup="filterTable()" placeholder="Uso Controlado" size="13"> 
+    <input type="text" onkeyup="filterTable()" placeholder="Validade" size="7">
+    <input type="text" onkeyup="filterTable()" placeholder="Pos_Estoque" size="17">
+</div>
+    
+    <table id="myTable">
         <tr>
             <th>ID</th>
             <th>Nome</th>
             <th>Dosagem</th>
             <th>Quantidade</th>
+            <th>UM</th>
             <th>Empresa</th>
             <th>Uso Controlado</th>
+            <th>Validade</th>
             <th>Posição de Estoque</th>
         </tr>
+    
         
         <?php
         // Conectar ao banco de dados
         $host = 'localhost';
         $usuario = 'root';
-        $senha = 'Vida@001';
+        $senha = '12345678';
         $banco = 'new_schema';
 
         $conn = new mysqli($host, $usuario, $senha, $banco);
@@ -81,7 +174,7 @@
         $result = $conn->query($sql);
 
         // Fechar conexão
-        echo 'connected';
+        //echo 'connected';
                 
         // Exibir dados
         if ($result->num_rows > 0) {
@@ -91,8 +184,10 @@
                 echo "<td>" . $row["Desc_Med"] . "</td>";
                 echo "<td>" . $row["Dosagem"] . "</td>";
                 echo "<td>" . $row["Qtd_Est"] . "</td>";
+                echo "<td>" . $row["UM"] . "</td>";
                 echo "<td>" . $row["Fabricante"] . "</td>";
                 echo "<td>" . $row["Uso_Controlado"]. "</td>";
+                echo "<td>" . $row["Validade"]. "</td>";
                 echo "<td>" . $row["Posic_Estq"] . "</td>";
                 echo "</tr>";
             }
@@ -103,6 +198,34 @@
         ?>
     </table>
 
+    <script>
+function filterTable() {
+    var inputs, table, tr, td, i, txtValue;
+    inputs = document.getElementsByClassName("search-container")[0].getElementsByTagName("input");
+    table = document.getElementById("myTable");
+    tr = table.getElementsByTagName("tr");
+    for (i = 1; i < tr.length; i++) {
+        var display = true;
+        for (var j = 0; j < inputs.length; j++) {
+            var filter = inputs[j].value.toUpperCase();
+            td = tr[i].getElementsByTagName("td")[j];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) === -1) {
+                    display = false;
+                    break;
+                }
+            }
+        }
+        tr[i].style.display = display ? "" : "none";
+    }
+}
+</script>
+
+
+
+    <br>
+    <br>
 
     <footer class="bg-body-tertiary text-center text-lg-start">
         <!-- Copyright -->
