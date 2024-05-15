@@ -74,7 +74,7 @@
 <script>
     function openNewWindow() {
         // Abrir a nova janela
-        var newWindow = window.open('', '_blank', 'width=450,height=260');
+        var newWindow = window.open('', '_blank', 'width=450,height=280');
         // Criar o conteúdo HTML do formulário
         var formContent = `
             <h2>Registro de Movimentação de Estoque</h2>
@@ -92,22 +92,30 @@
                 <input type="number" id="quantidade" name="quantidade" min="0" required>
                 <label for="UM">UM:</label>
                 <select id="UM" name="UM">
-                    <option value="caixa">Caixa</option>
-                    <option value="comprimido">Comprimido</option>
-                    <option value="cartela">Cartela</option>
+                    <option value="caixa">caixa</option>
+                    <option value="comprimido">comprimido</option>
+                    <option value="cartela">cartela</option>
                 </select>
                 <br>
-                <label for="recebedor">Recebedor:</label>
+                <label for="recebedor">Recebedor/Doador:</label>
                 <input type="text" id="recebedor" name="recebedor" required>
                 <br>
-                <label for="data">Data:</label>
+                <label for="data">Validade:</label>
                 <input type="date" id="data" name="data" required>
+                <label for="data">Data Doação:</label>
+                <input type="date" id="data_doac" name="data_doac" required>
                 <br>
                 <label for="posicao_estoque">Posição de Estoque:</label>
                 <select id="posicao_estoque" name="posicao_estoque">
                     <option value="Prateleira A">Prateleira A</option>
                     <option value="Prateleira B">Prateleira B</option>
                     <option value="Prateleira C">Prateleira C</option>
+                </select>
+                <br>
+                <label for="uso_controlado">Uso Controlado:</label>
+                <select id="uso_controlado" name="uso_controlado">
+                    <option value="FALSE">FALSE</option>
+                    <option value="TRUE">TRUE</option>
                 </select>
                 <br>
                 <br>
