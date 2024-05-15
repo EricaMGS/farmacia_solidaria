@@ -312,12 +312,120 @@
 
     </div>
     
+    <div class="container">
+    <canvas id="myChart" style="height: 500px;"></canvas>
+    <canvas id="chartValidade"></canvas>    
+    
+    </div>
+
+
+
+        <?php
+    // Conexão com o banco de dados
+    $servername = "localhost";
+    $username = "root";
+    $password = "12345678";
+    $dbname = "new_schema";
+
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Verificar conexão
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // Consulta SQL para obter os dados
+    $sql = "SELECT Desc_Med, UM, SUM(Qtd_Est) as total FROM bdd GROUP BY Desc_Med, UM";
+    $result = $conn->query($sql);
+
+    // Arrays para armazenar os dados
+    $labels = [];
+    $datasets = [];
+
+    $cores_por_um = [
+        'caixa' => 'rgba(255, 99, 132, 0.7)', // Vermelho
+        'cartela' => 'rgba(54, 162, 235, 0.7)', // Azul
+        'comprimido' => 'rgba(255, 206, 86, 0.7)' // Amarelo
+    ];
+
+    // Extrair dados do resultado da consulta e armazenar nos arrays
+    if ($result->num_rows > 0) {
+        while($row = $result->fetch_assoc()) {
+            $descMed = $row["Desc_Med"];
+            $um = $row["UM"];
+            $total = $row["total"];
+            
+            // Verificar se já existe um conjunto de dados para a Desc_Med
+            $labelIndex = array_search($descMed, array_column($labels, 'label'));
+            
+            // Se não existir, adiciona um novo rótulo
+            if ($labelIndex === false) {
+                $labels[] = [
+                    'label' => $descMed,
+                    'data' => [], // Inicializa o array de dados
+                ];
+                $labelIndex = count($labels) - 1;
+                
+                // Inicializa os dados do novo rótulo para todos os conjuntos de dados
+                foreach ($datasets as &$dataset) {
+                    $dataset['data'][] = 0;
+                }
+                unset($dataset); // Desvincula a referência
+            }
+            
+            // Verifica se já existe um conjunto de dados para a UM
+            $umIndex = array_search($um, array_column($datasets, 'label'));
+            
+            // Se não existir, adiciona um novo conjunto de dados
+            if ($umIndex === false) {
+                $datasets[] = [
+                    'label' => $um,
+                    'data' => array_fill(0, count($labels), 0), // Inicializa o array de dados
+                    'backgroundColor' => $cores_por_um[$um], // Define a cor com base no tipo de UM
+                    'borderColor' => $cores_por_um[$um], // Define a cor da borda com base no tipo de UM
+                    'borderWidth' => 1
+                ];
+                $umIndex = count($datasets) - 1;
+            }
+            
+            // Adiciona o total ao conjunto de dados correspondente
+            $datasets[$umIndex]['data'][$labelIndex] += $total;
+        }
+    }
+
+    // Fechar conexão com o banco de dados
+    $conn->close();
+    ?>
+
+    <!-- Elemento canvas para o gráfico -->
     
 
-    <div class="container">
-    <canvas id="chartDescMed" style="height: 500px;"></canvas>
-    <canvas id="chartValidade"></canvas>    
-    </div>
+    <script>
+        // Obtendo referência para o elemento canvas
+        var ctx = document.getElementById('myChart').getContext('2d');
+
+        // Criando o gráfico de barras
+        var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode(array_column($labels, 'label')); ?>,
+                datasets: <?php echo json_encode($datasets); ?>
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
+                    },
+                    x: {
+                        stacked: true // Empilha as barras no eixo X
+                    }
+                }
+            }
+        });
+    </script>
+
+    
     <script>
         // PHP para acessar o banco de dados e recuperar os dados
         <?php
@@ -331,43 +439,6 @@
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
-
-        // Query para o primeiro gráfico (Desc_Med)
-        $sqlDescMed = "SELECT UM, Desc_Med, SUM(Qtd_Est) AS total FROM bdd GROUP BY UM, Desc_Med";
-        $resultDescMed = $conn->query($sqlDescMed);
-        
-        $datasets = []; // Array para armazenar os datasets
-        $labelsDescMed = []; // Rótulos do eixo X
-        
-        // Inicializa um array associativo vazio para cada valor único de "UM"
-        $valuesByUM = [];
-        
-        if ($resultDescMed->num_rows > 0) {
-            while ($row = $resultDescMed->fetch_assoc()) {
-                // Adiciona o rótulo Desc_Med ao array de rótulos, se ainda não existir
-                if (!in_array($row["Desc_Med"], $labelsDescMed)) {
-                    $labelsDescMed[] = $row["Desc_Med"];
-                }
-
-                // Adiciona o valor de "UM" ao dataset correspondente
-                if (!isset($valuesByUM[$row["UM"]])) {
-                    $valuesByUM[$row["UM"]] = [];
-                }
-                $valuesByUM[$row["UM"]][] = $row["total"];
-            }
-        } else {
-            echo "0 results";
-        }
-        
-        // Adiciona cada valor único de "UM" como um dataset separado
-        foreach ($valuesByUM as $um => $values) {
-            $datasets[] = [
-                'label' => $um,
-                'backgroundColor' => 'rgba('.rand(0,255).', '.rand(0,255).', '.rand(0,255).', 0.5)', // Cor de fundo aleatória
-                'data' => $values
-            ];
-        }
-
         // Query para o segundo gráfico (Validade)
         $sqlValidade = "SELECT Validade, SUM(Qtd_Est) AS total FROM bdd GROUP BY Validade";
         $resultValidade = $conn->query($sqlValidade);
@@ -383,36 +454,12 @@
         } else {
             echo "0 results";
         }
+        
 
         $conn->close();
         ?>
 
-        // JavaScript para criar o primeiro gráfico (Desc_Med)
-        // Recupera os rótulos do PHP
-        var labels = <?php echo json_encode($labelsDescMed); ?>;
-        // Recupera os datasets do PHP
-        var datasets = <?php echo json_encode($datasets); ?>;
-
-        // Cria o gráfico de barras empilhadas
-        var ctx = document.getElementById('chartDescMed').getContext('2d');
-        var stackedBarChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                scales: {
-                    x: {
-                        stacked: true // Empilhar as barras no eixo x
-                    },
-                    y: {
-                        stacked: true // Empilhar as barras no eixo y
-                    }
-                }
-            }
-        });
-
+        
         // JavaScript para criar o segundo gráfico (Validade)
         var ctxValidade = document.getElementById('chartValidade').getContext('2d');
         var chartValidade = new Chart(ctxValidade, {
